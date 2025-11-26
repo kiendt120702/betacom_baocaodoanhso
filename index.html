@@ -1,73 +1,1408 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📊 Phân tích dữ liệu sản phẩm</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Phân Tích Dữ Liệu Sản Phẩm</title>
 
-  <div class="dashboard-container">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet" />
 
-    <div class="dashboard-content">
-      <div class="upload-container">
-        <h2 class="upload-title">Tải lên file Excel sản phẩm</h2>
-        <p class="upload-description">Tải lên file Excel của bạn để phân tích doanh số và lượt truy cập theo từng danh mục sản phẩm</p>
-        
-        <div class="upload-area" id="dropZone">
-          <div class="upload-icon">📁</div>
-          <p>Kéo và thả file Excel vào đây</p>
-          <p>hoặc</p>
-          <button type="button" class="upload-button" id="uploadBtn">Chọn file Excel</button>
-          <p class="file-type-hint">Chấp nhận file .xlsx, .xls</p>
+    <!-- FontAwesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- Excel Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+      :root {
+        --primary: #4f46e5; /* Indigo 600 */
+        --primary-hover: #4338ca; /* Indigo 700 */
+        --secondary: #64748b; /* Slate 500 */
+        --success: #10b981; /* Emerald 500 */
+        --danger: #ef4444; /* Red 500 */
+        --warning: #f59e0b; /* Amber 500 */
+        --background: #f8fafc; /* Slate 50 */
+        --surface: #ffffff;
+        --border: #e2e8f0;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+          0 4px 6px -4px rgb(0 0 0 / 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--background);
+        color: var(--text-main);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Header */
+      header {
+        background: linear-gradient(135deg, var(--primary), #6366f1);
+        color: white;
+        padding: 1.5rem 1rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-md);
+      }
+
+      .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header-title h1 {
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.025em;
+      }
+
+      .header-title p {
+        font-weight: 300;
+        opacity: 0.9;
+        font-size: 0.9rem;
+        margin: 0;
+      }
+
+      .btn-settings-header {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+      }
+
+      .btn-settings-header:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* Container */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+      }
+
+      /* Card Styles */
+      .card {
+        background: var(--surface);
+        border-radius: 16px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .card:hover {
+        box-shadow: var(--shadow-md);
+      }
+
+      /* Upload Area */
+      .upload-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 3rem 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-color: #f8fafc;
+      }
+
+      .upload-area:hover,
+      .upload-area.dragover {
+        border-color: var(--primary);
+        background-color: #eef2ff;
+        transform: scale(1.01);
+      }
+
+      .upload-icon-box {
+        width: 64px;
+        height: 64px;
+        background-color: #e0e7ff;
+        color: var(--primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin: 0 auto 1.5rem;
+      }
+
+      .btn-primary {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+      }
+
+      .btn-primary:hover {
+        background-color: var(--primary-hover);
+        transform: translateY(-1px);
+      }
+
+      .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+      }
+
+      .btn-outline {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        box-shadow: none;
+      }
+
+      .btn-outline:hover {
+        background: #f1f5f9;
+        color: var(--primary);
+        transform: none;
+      }
+
+      .btn-danger-outline {
+        background: transparent;
+        border: 1px solid #fee2e2;
+        color: var(--danger);
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .btn-danger-outline:hover {
+        background: #fef2f2;
+      }
+
+      .btn-success {
+        background-color: var(--success);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+      }
+
+      .btn-success:hover {
+        background-color: #059669;
+      }
+
+      /* File Info */
+      .file-info {
+        display: none;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        text-align: center;
+        animation: slideDown 0.3s ease-out;
+      }
+
+      .file-name {
+        font-weight: 600;
+        color: #166534;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      /* Section Titles */
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f1f5f9;
+      }
+
+      .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .section-title i {
+        color: var(--primary);
+      }
+
+      /* Tables */
+      .table-responsive {
+        overflow-x: auto;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        font-size: 0.95rem;
+      }
+
+      th {
+        background-color: #f8fafc;
+        color: var(--secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        padding: 1rem 1.5rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+      }
+
+      td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: var(--text-main);
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      tr:hover td {
+        background-color: #f8fafc;
+      }
+
+      /* Special Rows */
+      .highlight-group td {
+        background-color: #eef2ff;
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 1rem;
+        border-top: 2px solid #e0e7ff;
+      }
+
+      .grand-total td {
+        background-color: #f0fdf4;
+        color: #15803d;
+        font-weight: 700;
+        font-size: 1.1rem;
+      }
+
+      /* Metrics */
+      .metric-positive {
+        color: var(--success);
+        font-weight: 600;
+      }
+      .metric-negative {
+        color: var(--danger);
+        font-weight: 600;
+      }
+      .metric-neutral {
+        color: var(--secondary);
+      }
+      .metric-money {
+        font-family: "Consolas", monospace;
+        letter-spacing: -0.5px;
+        font-weight: 600;
+        color: #334155;
+      }
+
+      /* Input styling */
+      input.form-control {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.5rem;
+        font-family: inherit;
+        width: 100%;
+        transition: all 0.2s;
+      }
+
+      input.form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1001;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        background-color: white;
+        border-radius: 16px;
+        width: 95%;
+        max-width: 900px; /* Wider to fit new column */
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        animation: slideUp 0.3s;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        border-radius: 16px 16px 0 0;
+      }
+
+      .modal-body {
+        padding: 1.5rem;
+        overflow-y: auto;
+      }
+
+      .modal-footer {
+        padding: 1.5rem;
+        border-top: 1px solid var(--border);
+        background: #f8fafc;
+        border-radius: 0 0 16px 16px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .config-section {
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+      }
+
+      .config-header {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--primary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* UPDATED GRID LAYOUT */
+      .config-row {
+        display: grid;
+        /* Prefix | Min | Max | Category Name | Revenue | Delete */
+        grid-template-columns: 70px 70px 70px 1.5fr 1fr 40px;
+        gap: 10px;
+        margin-bottom: 10px;
+        align-items: center;
+      }
+
+      .config-label {
+        font-size: 0.8rem;
+        color: var(--secondary);
+        margin-bottom: 4px;
+      }
+
+      /* Loading */
+      #loading {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e2e8f0;
+        border-top: 4px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+      }
+
+      /* Notifications */
+      .toast-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 1000;
+      }
+
+      .toast {
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 10px;
+        transform: translateX(120%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        border-left: 4px solid var(--primary);
+        max-width: 350px;
+      }
+
+      .toast.show {
+        transform: translateX(0);
+      }
+      .toast.success {
+        border-left-color: var(--success);
+      }
+      .toast.error {
+        border-left-color: var(--danger);
+      }
+      .toast.warning {
+        border-left-color: var(--warning);
+      }
+
+      .toast-icon {
+        font-size: 1.2rem;
+      }
+      .success .toast-icon {
+        color: var(--success);
+      }
+      .error .toast-icon {
+        color: var(--danger);
+      }
+
+      /* Results Container */
+      #resultsContainer {
+        display: none;
+      }
+      .fade-in {
+        animation: fadeIn 0.6s ease-out forwards;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes slideUp {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Footer */
+      footer {
+        text-align: center;
+        padding: 3rem 0;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        border-top: 1px solid var(--border);
+        margin-top: 3rem;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .container {
+          padding: 0 1rem;
+        }
+        .section-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+        .btn-primary {
+          width: 100%;
+          justify-content: center;
+        }
+        th,
+        td {
+          padding: 0.75rem 1rem;
+        }
+
+        /* Responsive Grid for Config */
+        .config-row {
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 8px;
+          background: #f8fafc;
+          padding: 10px;
+          border-radius: 8px;
+        }
+        .config-row input.rule-category {
+          grid-column: 1 / -1; /* Full width */
+        }
+        .config-row input.rule-revenue {
+          grid-column: 1 / 3; /* 2/3 width */
+        }
+        .config-row button {
+          grid-column: 3;
+          justify-self: end;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-content">
+        <div class="header-title">
+          <h1>
+            <i class="fa-solid fa-chart-pie"></i> Phân Tích Dữ Liệu Sản Phẩm
+          </h1>
+          <p>Tự động phân loại và tính toán hiệu suất kinh doanh</p>
         </div>
-        
-        <input type="file" id="inputExcel" accept=".xlsx, .xls" />
-        
-        <div class="file-info" id="fileInfo">
-          <div class="file-name">
-            <span class="file-icon">✅</span>
-            <span id="fileName">File đã sẵn sàng</span>
-          </div>
-          <button type="button" class="process-button" id="processButton">Phân tích dữ liệu</button>
-        </div>
-        
-        <div id="loading">
-          <div class="loading-spinner"></div>
-          <p>Đang xử lý dữ liệu...</p>
-        </div>
+        <button id="openSettingsBtn" class="btn-settings-header">
+          <i class="fa-solid fa-gear"></i> Cấu hình
+        </button>
       </div>
-      
-      <div class="results-container" id="resultsContainer">
-        <div class="results-header">
-          <h2>Kết quả phân tích</h2>
-          <button id="exportBtn" class="export-button">
-            <span class="export-icon">📥</span> Tải file kết quả
+    </header>
+
+    <div class="container">
+      <!-- Upload Section -->
+      <div class="card">
+        <div class="upload-area" id="dropZone">
+          <div class="upload-icon-box">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <h3 style="margin-bottom: 0.5rem; color: var(--text-main)">
+            Kéo thả file Excel vào đây
+          </h3>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem">
+            Hỗ trợ định dạng .xlsx, .xls
+          </p>
+          <button type="button" class="btn-primary" id="uploadBtn">
+            <i class="fa-regular fa-folder-open"></i> Chọn file từ máy tính
           </button>
         </div>
-        
-        <div class="summary-container">
-          <h3 class="section-title">Bảng tổng hợp</h3>
-          <table id="summaryTable" class="summary-table">
-            <tbody></tbody>
-          </table>
+
+        <input
+          type="file"
+          id="inputExcel"
+          accept=".xlsx, .xls"
+          style="display: none" />
+
+        <div class="file-info" id="fileInfo">
+          <div class="file-name">
+            <i class="fa-solid fa-file-excel fa-lg"></i>
+            <span id="fileName">data.xlsx</span>
+          </div>
+          <button type="button" class="btn-success" id="processButton">
+            <i class="fa-solid fa-bolt"></i> Phân tích ngay
+          </button>
         </div>
-        
-        <div class="category-container">
-          <h3 class="section-title">Chi tiết theo danh mục</h3>
-          <div id="categoryTables" class="category-tables"></div>
+
+        <div id="loading">
+          <div class="spinner"></div>
+          <p style="color: var(--text-muted)">Đang xử lý dữ liệu...</p>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div id="resultsContainer">
+        <!-- Summary Card -->
+        <div class="card fade-in">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="fa-solid fa-list-check"></i> Bảng Tổng Hợp Chỉ Số
+            </div>
+            <button id="exportBtn" class="btn-primary" style="display: none">
+              <i class="fa-solid fa-download"></i> Tải báo cáo
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table id="summaryTable">
+              <thead>
+                <tr>
+                  <th>Chỉ số</th>
+                  <th>Giá trị</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- JS will render rows here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Details Section -->
+        <div
+          id="categoryTablesWrapper"
+          class="fade-in"
+          style="animation-delay: 0.2s">
+          <!-- JS will render category tables here -->
         </div>
       </div>
     </div>
-    
-  </div>
 
-  <script src="config.js"></script>
-  <script src="main.js"></script>
-  <script src="renderCategoryTables.js"></script>
-  <script src="renderSummary.js"></script>
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="section-title">
+            <i class="fa-solid fa-sliders"></i> Cấu hình hệ thống
+          </h3>
+          <button
+            class="btn-danger-outline"
+            id="closeSettingsBtn"
+            style="border: none; color: #64748b; font-size: 1.2rem">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Rule Configuration -->
+          <div class="config-section">
+            <div class="config-header">
+              <span><i class="fa-solid fa-filter"></i> Quy tắc & Chỉ số</span>
+              <button class="btn-primary btn-sm btn-outline" id="addRuleBtn">
+                <i class="fa-solid fa-plus"></i> Thêm quy tắc
+              </button>
+            </div>
+            <div
+              style="
+                background: #f8fafc;
+                padding: 10px;
+                border-radius: 6px;
+                font-size: 0.85rem;
+                margin-bottom: 10px;
+                color: var(--secondary);
+              ">
+              <i class="fa-solid fa-circle-info"></i> Nhập khoảng mã sản phẩm và
+              tên danh mục tương ứng. Bạn có thể nhập luôn Doanh thu trung
+              bình/khách cho danh mục đó.
+            </div>
+            <div
+              class="config-row"
+              style="
+                font-weight: 600;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                color: var(--secondary);
+              ">
+              <div>Tiền tố</div>
+              <div>Min</div>
+              <div>Max</div>
+              <div>Tên danh mục</div>
+              <div>Doanh thu/Khách</div>
+              <div></div>
+            </div>
+            <div id="rulesContainer">
+              <!-- Rule rows generated by JS -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn-primary btn-outline"
+            id="resetSettingsBtn"
+            style="margin-right: auto">
+            Khôi phục mặc định
+          </button>
+          <button class="btn-primary" id="saveSettingsBtn">Lưu & Đóng</button>
+        </div>
+      </div>
+    </div>
 
-</body>
+    <footer>
+      <p>&copy; 2023 Dashboard Phân Tích. Thiết kế tối ưu cho hiệu suất.</p>
+    </footer>
+
+    <!-- Notification Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+      (function () {
+        // --- DEFAULT CONFIGURATION (Fallback) ---
+        const DEFAULT_RULES = [
+          { prefix: "KA", min: 1, max: 17, category: "Chân váy (dải cũ)" },
+          { prefix: "KA", min: 18, max: 99, category: "Chân váy (dải mới)" },
+          { prefix: "KB", min: 1, max: 24, category: "Chân váy (dải cũ)" },
+          { prefix: "KB", min: 25, max: 99, category: "Chân váy (dải mới)" },
+          { prefix: "KC", min: 1, max: 6, category: "Chân váy (dải cũ)" },
+          { prefix: "KC", min: 7, max: 99, category: "Quần (dải mới)" },
+        ];
+
+        const DEFAULT_METRICS = {
+          "Chân váy (dải cũ)": 130000,
+          "Chân váy (dải mới)": 129000,
+          "Quần (dải mới)": 159000,
+        };
+
+        // --- GLOBAL STATE ---
+        let appConfig = {
+          rules: [],
+          metrics: {},
+        };
+
+        // --- DOM ELEMENTS ---
+        document.addEventListener("DOMContentLoaded", function () {
+          // Load Config first
+          loadConfig();
+
+          const dropZone = document.getElementById("dropZone");
+          const inputExcel = document.getElementById("inputExcel");
+          const fileInfo = document.getElementById("fileInfo");
+          const fileName = document.getElementById("fileName");
+          const processButton = document.getElementById("processButton");
+          const uploadButton = document.getElementById("uploadBtn");
+          const loading = document.getElementById("loading");
+          const resultsContainer = document.getElementById("resultsContainer");
+          const exportBtn = document.getElementById("exportBtn");
+
+          // Settings Elements
+          const settingsModal = document.getElementById("settingsModal");
+          const openSettingsBtn = document.getElementById("openSettingsBtn");
+          const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+          const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+          const resetSettingsBtn = document.getElementById("resetSettingsBtn");
+          const addRuleBtn = document.getElementById("addRuleBtn");
+
+          // --- EVENT LISTENERS (Main App) ---
+
+          uploadButton.addEventListener("click", (e) => {
+            e.stopPropagation();
+            inputExcel.click();
+          });
+          dropZone.addEventListener("click", () => inputExcel.click());
+
+          dropZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZone.classList.add("dragover");
+          });
+          dropZone.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("dragover");
+          });
+          dropZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("dragover");
+            handleFiles(e.dataTransfer.files);
+          });
+          inputExcel.addEventListener("change", (e) => {
+            handleFiles(e.target.files);
+          });
+
+          processButton.addEventListener("click", function () {
+            if (!inputExcel.files || inputExcel.files.length === 0) return;
+            fileInfo.style.display = "none";
+            loading.style.display = "block";
+            setTimeout(() => {
+              processExcelFile(inputExcel.files[0]);
+            }, 500);
+          });
+
+          exportBtn.addEventListener("click", exportSummaryTableToExcel);
+
+          // --- EVENT LISTENERS (Settings) ---
+
+          openSettingsBtn.addEventListener("click", () => {
+            renderSettingsUI();
+            settingsModal.classList.add("active");
+          });
+
+          closeSettingsBtn.addEventListener("click", () => {
+            settingsModal.classList.remove("active");
+          });
+
+          // Close modal when clicking outside
+          settingsModal.addEventListener("click", (e) => {
+            if (e.target === settingsModal) {
+              settingsModal.classList.remove("active");
+            }
+          });
+
+          addRuleBtn.addEventListener("click", () => addRuleRow()); // Add empty row
+
+          saveSettingsBtn.addEventListener("click", () => {
+            saveConfigFromUI();
+            settingsModal.classList.remove("active");
+            showToast("Đã lưu cấu hình thành công!", "success");
+            if (inputExcel.files.length > 0) {
+              showToast(
+                'Vui lòng nhấn "Phân tích ngay" lại để áp dụng thay đổi.',
+                "info"
+              );
+              fileInfo.style.display = "block";
+              resultsContainer.style.display = "none";
+            }
+          });
+
+          resetSettingsBtn.addEventListener("click", () => {
+            if (
+              confirm(
+                "Bạn có chắc chắn muốn khôi phục cấu hình mặc định không?"
+              )
+            ) {
+              appConfig.rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
+              appConfig.metrics = JSON.parse(JSON.stringify(DEFAULT_METRICS));
+              saveConfigToStorage();
+              renderSettingsUI();
+              showToast("Đã khôi phục mặc định", "info");
+            }
+          });
+
+          // --- FUNCTIONS (Logic) ---
+
+          function loadConfig() {
+            const storedConfig = localStorage.getItem("appConfig");
+            if (storedConfig) {
+              try {
+                const parsed = JSON.parse(storedConfig);
+                appConfig.rules = parsed.rules || DEFAULT_RULES;
+                appConfig.metrics = parsed.metrics || DEFAULT_METRICS;
+              } catch (e) {
+                console.error("Config load error, using default", e);
+                appConfig.rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
+                appConfig.metrics = JSON.parse(JSON.stringify(DEFAULT_METRICS));
+              }
+            } else {
+              appConfig.rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
+              appConfig.metrics = JSON.parse(JSON.stringify(DEFAULT_METRICS));
+            }
+          }
+
+          function saveConfigToStorage() {
+            localStorage.setItem("appConfig", JSON.stringify(appConfig));
+          }
+
+          // UI: Render Settings
+          function renderSettingsUI() {
+            const rulesContainer = document.getElementById("rulesContainer");
+            rulesContainer.innerHTML = "";
+
+            // Render Rules
+            appConfig.rules.forEach((rule) => {
+              // Try to find existing metric for this category to fill the input
+              const currentMetric = appConfig.metrics[rule.category] || "";
+              addRuleRow(rule, currentMetric);
+            });
+          }
+
+          // Updated addRuleRow to include Revenue input
+          // Default min/max is empty string now
+          function addRuleRow(
+            data = { prefix: "", min: "", max: "", category: "" },
+            metricValue = ""
+          ) {
+            const div = document.createElement("div");
+            div.className = "config-row";
+
+            // If min/max is null/undefined in data, show empty string
+            const minVal =
+              data.min !== undefined && data.min !== null ? data.min : "";
+            const maxVal =
+              data.max !== undefined && data.max !== null ? data.max : "";
+
+            div.innerHTML = `
+                    <input type="text" class="form-control rule-prefix" value="${data.prefix}" placeholder="KA">
+                    <input type="number" class="form-control rule-min" value="${minVal}" placeholder="Min">
+                    <input type="number" class="form-control rule-max" value="${maxVal}" placeholder="Max">
+                    <input type="text" class="form-control rule-category" value="${data.category}" placeholder="Tên danh mục">
+                    <input type="number" class="form-control rule-revenue" value="${metricValue}" placeholder="VND">
+                    <button class="btn-danger-outline btn-delete-row"><i class="fa-solid fa-trash"></i></button>
+                `;
+            div
+              .querySelector(".btn-delete-row")
+              .addEventListener("click", () => div.remove());
+            document.getElementById("rulesContainer").appendChild(div);
+          }
+
+          function saveConfigFromUI() {
+            const newRules = [];
+            const newMetrics = {}; // Rebuild metrics from the UI inputs
+
+            document
+              .querySelectorAll("#rulesContainer .config-row")
+              .forEach((row) => {
+                const prefix = row
+                  .querySelector(".rule-prefix")
+                  .value.trim()
+                  .toUpperCase();
+                // Handle empty inputs for min/max effectively
+                const minInput = row.querySelector(".rule-min").value;
+                const maxInput = row.querySelector(".rule-max").value;
+
+                const min = minInput !== "" ? parseInt(minInput) : 0;
+                const max = maxInput !== "" ? parseInt(maxInput) : 9999;
+
+                const category = row
+                  .querySelector(".rule-category")
+                  .value.trim();
+                const revenue =
+                  parseInt(row.querySelector(".rule-revenue").value) || 0;
+
+                if (prefix && category) {
+                  newRules.push({ prefix, min, max, category });
+
+                  // Update metrics: Last rule defines the metric for that category (simplest logic)
+                  if (revenue > 0) {
+                    newMetrics[category] = revenue;
+                  } else if (appConfig.metrics[category]) {
+                    // Preserve existing metric if user didn't type new one but it existed?
+                    // No, let's strictly follow UI. If UI is empty/0, metric is 0.
+                    // Exception: If multiple rows have same category, we take the non-zero one if possible.
+                    if (!newMetrics[category]) newMetrics[category] = 0;
+                  }
+                }
+              });
+
+            appConfig.rules = newRules;
+            appConfig.metrics = newMetrics;
+            saveConfigToStorage();
+          }
+
+          // --- FILE PROCESSING LOGIC ---
+
+          function handleFiles(files) {
+            if (files.length > 0) {
+              const file = files[0];
+              if (file.name.match(/\.(xlsx|xls)$/)) {
+                inputExcel.files = files;
+                fileName.textContent = file.name;
+                dropZone.style.display = "none";
+                fileInfo.style.display = "block";
+              } else {
+                showToast("Vui lòng chọn file Excel (.xlsx, .xls)", "error");
+              }
+            }
+          }
+
+          function processExcelFile(file) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+              try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: "array" });
+                if (workbook.SheetNames.length === 0)
+                  throw new Error("File rỗng");
+
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet);
+
+                if (json.length === 0) throw new Error("Không có dữ liệu");
+
+                // --- Dynamic Data Initialization ---
+                const summary = { Tổng: { views: 0, revenue: 0, after: 0 } };
+                const categoryData = {};
+
+                // Initialize buckets based on Config
+                const uniqueCategories = new Set();
+                appConfig.rules.forEach((r) =>
+                  uniqueCategories.add(r.category)
+                );
+                Object.keys(appConfig.metrics).forEach((k) =>
+                  uniqueCategories.add(k)
+                );
+
+                uniqueCategories.forEach((cat) => {
+                  summary[cat] = { views: 0, revenue: 0 };
+                  categoryData[cat] = [];
+                });
+
+                if (!categoryData["Không xác định"])
+                  categoryData["Không xác định"] = [];
+
+                // Process Rows
+                json.forEach((row) => {
+                  const name = row["Sản phẩm"];
+                  const views = parseInt(row["Lượt truy cập sản phẩm"]) || 0;
+                  const revenueRaw = row["Doanh số (Đơn đã xác nhận) (VND)"];
+
+                  let revenue = 0;
+                  if (typeof revenueRaw === "string") {
+                    const cleanedRevenue = revenueRaw
+                      .replace(/\./g, "")
+                      .replace(",", ".");
+                    revenue = Number(cleanedRevenue) || 0;
+                  } else if (!isNaN(revenueRaw)) {
+                    revenue = revenueRaw;
+                  }
+
+                  const danhMuc = getDanhMucDynamic(name);
+
+                  if (!summary[danhMuc])
+                    summary[danhMuc] = { views: 0, revenue: 0 };
+                  if (!categoryData[danhMuc]) categoryData[danhMuc] = [];
+
+                  summary[danhMuc].views += views;
+                  summary[danhMuc].revenue += revenue;
+                  categoryData[danhMuc].push({ name, revenue, views });
+
+                  summary["Tổng"].views += views;
+                  summary["Tổng"].revenue += revenue;
+                });
+
+                renderSummary(summary);
+                renderCategoryTables(categoryData);
+
+                loading.style.display = "none";
+                resultsContainer.style.display = "block";
+                exportBtn.style.display = "inline-flex";
+
+                setTimeout(() => {
+                  resultsContainer.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }, 100);
+
+                showToast("Phân tích dữ liệu thành công!", "success");
+              } catch (error) {
+                console.error(error);
+                showToast("Lỗi xử lý file: " + error.message, "error");
+                loading.style.display = "none";
+                fileInfo.style.display = "block";
+              }
+            };
+            reader.readAsArrayBuffer(file);
+          }
+
+          function getDanhMucDynamic(name) {
+            if (!name || typeof name !== "string") return "Không xác định";
+            const cleanedName = name.replace(/[\[\]\-\s]+/g, "").toUpperCase();
+
+            const match = cleanedName.match(/([A-Z]{2,3})(\d{1,4})/);
+
+            if (!match) return "Không xác định";
+
+            const prefix = match[1];
+            const num = parseInt(match[2], 10);
+
+            for (const rule of appConfig.rules) {
+              if (
+                prefix === rule.prefix &&
+                num >= rule.min &&
+                num <= rule.max
+              ) {
+                return rule.category;
+              }
+            }
+
+            return "Không xác định";
+          }
+
+          function renderSummary(summary) {
+            const tbody = document.querySelector("#summaryTable tbody");
+            tbody.innerHTML = "";
+
+            let tongDoanhSo = summary["Tổng"].revenue;
+            let tongTraffic = summary["Tổng"].views;
+
+            const activeCategories = Object.keys(summary).filter(
+              (k) => k !== "Tổng" && summary[k].revenue > 0
+            );
+
+            let tongKhach = 0;
+            activeCategories.forEach((dm) => {
+              const dtkh = appConfig.metrics[dm] || 0;
+              if (dtkh > 0)
+                tongKhach += Math.round((summary[dm].revenue || 0) / dtkh);
+            });
+
+            const afterValue = Math.round(tongDoanhSo * 0.97);
+            summary["Tổng"].after = afterValue;
+            const hoanHuyTong =
+              tongDoanhSo > 0
+                ? (((tongDoanhSo - afterValue) / tongDoanhSo) * 100).toFixed(2)
+                : "0.00";
+            const tongChuyenDoi =
+              tongTraffic > 0
+                ? ((tongKhach / tongTraffic) * 100).toFixed(2)
+                : 0;
+            const doanhSoMoiKH_Tong =
+              tongKhach > 0 ? tongDoanhSo / tongKhach : 0;
+
+            const inputId = `input-after-total`;
+
+            addHeaderRow(tbody, "TỔNG TOÀN BỘ");
+            addRow(tbody, "Doanh số", formatMoney(tongDoanhSo), "metric-money");
+            addRow(tbody, "Traffic (Lượt truy cập)", formatNumber(tongTraffic));
+            addRow(
+              tbody,
+              "Tỉ lệ chuyển đổi",
+              `${tongChuyenDoi}%`,
+              "metric-positive"
+            );
+            addRow(tbody, "Số khách hàng (ước tính)", formatNumber(tongKhach));
+            addRow(
+              tbody,
+              "Doanh số / Khách hàng",
+              formatMoney(doanhSoMoiKH_Tong)
+            );
+            addRow(
+              tbody,
+              "Tỷ lệ hoàn huỷ",
+              `${hoanHuyTong}%`,
+              "metric-negative"
+            );
+
+            const trInput = document.createElement("tr");
+            trInput.innerHTML = `
+                    <td>Doanh số sau hoàn huỷ (Nhập để tính lại %)</td>
+                    <td><input type="number" id="${inputId}" value="${afterValue}" class="form-control" style="width: 140px;"></td>
+                `;
+            tbody.appendChild(trInput);
+
+            activeCategories.sort(
+              (a, b) => summary[b].revenue - summary[a].revenue
+            );
+
+            activeCategories.forEach((danhMuc) => {
+              const data = summary[danhMuc];
+              const dtkh = appConfig.metrics[danhMuc] || 0;
+              const khach = dtkh > 0 ? Math.round(data.revenue / dtkh) : 0;
+              const chuyenDoi =
+                data.views > 0 ? ((khach / data.views) * 100).toFixed(2) : 0;
+              const after = data.revenue * (1 - hoanHuyTong / 100);
+
+              addHeaderRow(tbody, danhMuc);
+              addRow(
+                tbody,
+                "Doanh số",
+                formatMoney(data.revenue),
+                "metric-money"
+              );
+              addRow(tbody, "Traffic", formatNumber(data.views));
+              addRow(
+                tbody,
+                "Tỉ lệ chuyển đổi",
+                `${chuyenDoi}%`,
+                "metric-positive"
+              );
+
+              if (dtkh > 0) {
+                addRow(tbody, "Số khách hàng", formatNumber(khach));
+              } else {
+                addRow(
+                  tbody,
+                  "Số khách hàng",
+                  '<span style="color:var(--text-muted); font-size:0.8em;">(Chưa cấu hình chỉ số)</span>'
+                );
+              }
+
+              addRow(
+                tbody,
+                "Doanh số sau hoàn huỷ (theo tỷ lệ tổng)",
+                formatMoney(after)
+              );
+            });
+
+            const inputEl = document.getElementById(inputId);
+            if (inputEl) {
+              inputEl.addEventListener("change", (e) => {
+                const newVal = parseFloat(e.target.value);
+                if (!isNaN(newVal)) {
+                  summary["Tổng"].after = newVal;
+                  renderSummary(summary);
+                  setTimeout(() => {
+                    const newInput = document.getElementById(inputId);
+                    if (newInput) {
+                      newInput.focus();
+                      newInput.value = newVal;
+                    }
+                  }, 50);
+                }
+              });
+            }
+          }
+
+          function addHeaderRow(tbody, text) {
+            const tr = document.createElement("tr");
+            tr.className = "highlight-group";
+            tr.innerHTML = `<td colspan="2">${text}</td>`;
+            tbody.appendChild(tr);
+          }
+
+          function addRow(tbody, label, value, valueClass = "") {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${label}</td><td class="${valueClass}">${value}</td>`;
+            tbody.appendChild(tr);
+          }
+
+          function renderCategoryTables(categoryData) {
+            const wrapper = document.getElementById("categoryTablesWrapper");
+            wrapper.innerHTML = "";
+
+            const sortedCategories = Object.keys(categoryData)
+              .filter((cat) => categoryData[cat].length > 0)
+              .sort((a, b) => {
+                const revA = categoryData[a].reduce(
+                  (sum, i) => sum + i.revenue,
+                  0
+                );
+                const revB = categoryData[b].reduce(
+                  (sum, i) => sum + i.revenue,
+                  0
+                );
+                return revB - revA;
+              });
+
+            sortedCategories.forEach((danhMuc) => {
+              const items = categoryData[danhMuc];
+              items.sort((a, b) => b.revenue - a.revenue);
+
+              const card = document.createElement("div");
+              card.className = "card";
+              card.style.marginBottom = "2rem";
+
+              const header = document.createElement("div");
+              header.className = "section-header";
+              header.innerHTML = `<div class="section-title"><i class="fa-solid fa-tag"></i> ${danhMuc}</div>`;
+
+              const tableContainer = document.createElement("div");
+              tableContainer.className = "table-responsive";
+
+              const table = document.createElement("table");
+              const thead = document.createElement("thead");
+              thead.innerHTML = `<tr><th>Tên sản phẩm</th><th>Doanh số</th><th>Traffic</th></tr>`;
+
+              const tbody = document.createElement("tbody");
+              let totalRev = 0,
+                totalView = 0;
+
+              items.forEach((item) => {
+                totalRev += item.revenue;
+                totalView += item.views;
+                const tr = document.createElement("tr");
+                const isHigh =
+                  item.revenue > totalRev * 0.2 && items.length > 5;
+
+                tr.innerHTML = `
+                            <td>${item.name} ${
+                  isHigh
+                    ? '<i class="fa-solid fa-star" style="color:#fbbf24; font-size:0.8em; margin-left:5px;"></i>'
+                    : ""
+                }</td>
+                            <td class="metric-money">${formatMoney(
+                              item.revenue
+                            )}</td>
+                            <td>${formatNumber(item.views)}</td>
+                        `;
+                tbody.appendChild(tr);
+              });
+
+              const tfoot = document.createElement("tr");
+              tfoot.className = "grand-total";
+              tfoot.innerHTML = `
+                        <td>Tổng nhóm</td>
+                        <td>${formatMoney(totalRev)}</td>
+                        <td>${formatNumber(totalView)}</td>
+                    `;
+              tbody.appendChild(tfoot);
+
+              table.appendChild(thead);
+              table.appendChild(tbody);
+              tableContainer.appendChild(table);
+
+              card.appendChild(header);
+              card.appendChild(tableContainer);
+              wrapper.appendChild(card);
+            });
+          }
+
+          function exportSummaryTableToExcel() {
+            const table = document.getElementById("summaryTable");
+            const wb = XLSX.utils.table_to_book(table, { sheet: "TongHop" });
+            XLSX.writeFile(wb, "BaoCao_PhanTich.xlsx");
+          }
+
+          function formatMoney(amount) {
+            return amount.toLocaleString("vi-VN", {
+              style: "currency",
+              currency: "VND",
+            });
+          }
+
+          function formatNumber(num) {
+            return num.toLocaleString("vi-VN");
+          }
+
+          function showToast(message, type = "success") {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+            toast.className = `toast ${type}`;
+            const icon =
+              type === "success"
+                ? "fa-circle-check"
+                : type === "error"
+                ? "fa-circle-exclamation"
+                : "fa-circle-info";
+            toast.innerHTML = `<i class="fa-solid ${icon} toast-icon"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add("show"), 10);
+            setTimeout(() => {
+              toast.classList.remove("show");
+              setTimeout(() => toast.remove(), 300);
+            }, 4000);
+          }
+        });
+      })();
+    </script>
+  </body>
 </html>
