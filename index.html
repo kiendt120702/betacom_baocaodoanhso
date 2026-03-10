@@ -373,13 +373,26 @@
         background-color: white;
         border-radius: 16px;
         width: 95%;
-        max-width: 900px; /* Wider to fit new column */
+        max-width: 1100px;
         max-height: 90vh;
         overflow-y: auto;
         box-shadow: var(--shadow-lg);
         animation: slideUp 0.3s;
         display: flex;
         flex-direction: column;
+      }
+
+      #detailTable td:first-child,
+      #detailTable th:first-child {
+        min-width: 200px;
+        max-width: 350px;
+        word-wrap: break-word;
+        white-space: normal;
+      }
+
+      #detailTable td:not(:first-child),
+      #detailTable th:not(:first-child) {
+        white-space: nowrap;
       }
 
       .modal-header {
@@ -397,6 +410,65 @@
         overflow-y: auto;
       }
 
+
+      /* Column Toggle */
+      .column-toggle-wrapper {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 12px;
+      }
+      .column-toggle-btn {
+        font-size: 0.85rem;
+        padding: 6px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        cursor: pointer;
+        color: var(--text-main);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+      }
+      .column-toggle-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .column-toggle-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 100;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: var(--shadow-md);
+        padding: 8px 0;
+        min-width: 170px;
+        margin-top: 4px;
+      }
+      .column-toggle-dropdown.show {
+        display: block;
+      }
+      .column-toggle-dropdown label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 14px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: var(--text-main);
+        transition: background 0.15s;
+      }
+      .column-toggle-dropdown label:hover {
+        background: #f1f5f9;
+      }
+      .column-toggle-dropdown input[type="checkbox"] {
+        accent-color: var(--primary);
+        width: 15px;
+        height: 15px;
+      }
 
       /* UPDATED GRID LAYOUT */
       .config-row {
@@ -677,6 +749,21 @@
             </button>
           </div>
 
+          <!-- Column Toggle Filter -->
+          <div class="column-toggle-wrapper">
+            <button class="btn-outline column-toggle-btn" id="columnToggleBtn">
+              <i class="fa-solid fa-sliders"></i> Hiển thị cột
+            </button>
+            <div class="column-toggle-dropdown" id="columnToggleDropdown">
+              <label><input type="checkbox" data-col="revenue" checked> Doanh số</label>
+              <label><input type="checkbox" data-col="cr" checked> CR</label>
+              <label><input type="checkbox" data-col="tytrong" checked> Tỷ trọng</label>
+              <label><input type="checkbox" data-col="traffic" checked> Traffic</label>
+              <label><input type="checkbox" data-col="ctr" checked> CTR</label>
+              <label><input type="checkbox" data-col="addtocart" checked> Thêm vào giỏ</label>
+            </div>
+          </div>
+
           <div class="table-responsive">
             <table id="summaryTable">
               <thead>
@@ -803,6 +890,29 @@
           });
           detailModal.addEventListener("click", (e) => {
             if (e.target === detailModal) detailModal.classList.remove("active");
+          });
+
+          // --- COLUMN TOGGLE EVENTS ---
+          const columnToggleBtn = document.getElementById("columnToggleBtn");
+          const columnToggleDropdown = document.getElementById("columnToggleDropdown");
+
+          columnToggleBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            columnToggleDropdown.classList.toggle("show");
+          });
+
+          document.addEventListener("click", (e) => {
+            if (!columnToggleDropdown.contains(e.target) && e.target !== columnToggleBtn) {
+              columnToggleDropdown.classList.remove("show");
+            }
+          });
+
+          columnToggleDropdown.querySelectorAll('input[data-col]').forEach(cb => {
+            cb.addEventListener("change", () => {
+              if (lastSummary && lastCategoryProducts) {
+                renderSummary(lastSummary, lastCategoryProducts);
+              }
+            });
           });
 
           addRuleBtn.addEventListener("click", () => {
@@ -1008,7 +1118,7 @@
                 }
 
                 // --- Dynamic Data Initialization ---
-                const summary = { Tổng: { views: 0, revenue: 0, cr: 0, crCount: 0 } };
+                const summary = { Tổng: { views: 0, revenue: 0, cr: 0, crCount: 0, ctr: 0, ctrCount: 0, addToCart: 0 } };
                 const categoryProducts = {};
 
                 // Initialize buckets based on Config
@@ -1018,7 +1128,7 @@
                 );
 
                 uniqueCategories.forEach((cat) => {
-                  summary[cat] = { views: 0, revenue: 0, cr: 0, crCount: 0 };
+                  summary[cat] = { views: 0, revenue: 0, cr: 0, crCount: 0, ctr: 0, ctrCount: 0, addToCart: 0 };
                   categoryProducts[cat] = [];
                 });
 
@@ -1046,10 +1156,23 @@
                     revenue = revenueRaw;
                   }
 
+                  // Parse CTR
+                  const ctrRaw = row["CTR"];
+                  let ctr = 0;
+                  if (typeof ctrRaw === "string") {
+                    ctr = parseFloat(ctrRaw.replace(",", ".").replace("%", "")) || 0;
+                  } else if (!isNaN(ctrRaw) && ctrRaw !== undefined && ctrRaw !== null) {
+                    ctr = ctrRaw > 1 ? ctrRaw : ctrRaw * 100;
+                  }
+
+                  // Parse Thêm vào giỏ hàng
+                  const addToCartRaw = row["Sản phẩm (Thêm vào giỏ hàng)"];
+                  const addToCart = parseInt(addToCartRaw) || 0;
+
                   const danhMuc = getDanhMucDynamic(name);
 
                   if (!summary[danhMuc])
-                    summary[danhMuc] = { views: 0, revenue: 0, cr: 0, crCount: 0 };
+                    summary[danhMuc] = { views: 0, revenue: 0, cr: 0, crCount: 0, ctr: 0, ctrCount: 0, addToCart: 0 };
                   if (!categoryProducts[danhMuc])
                     categoryProducts[danhMuc] = [];
 
@@ -1057,12 +1180,18 @@
                   summary[danhMuc].revenue += revenue;
                   summary[danhMuc].cr += cr;
                   summary[danhMuc].crCount++;
-                  categoryProducts[danhMuc].push({ maSP, name, revenue, cr });
+                  summary[danhMuc].ctr += ctr;
+                  summary[danhMuc].ctrCount++;
+                  summary[danhMuc].addToCart += addToCart;
+                  categoryProducts[danhMuc].push({ maSP, name, revenue, cr, views, ctr, addToCart });
 
                   summary["Tổng"].views += views;
                   summary["Tổng"].revenue += revenue;
                   summary["Tổng"].cr += cr;
                   summary["Tổng"].crCount++;
+                  summary["Tổng"].ctr += ctr;
+                  summary["Tổng"].ctrCount++;
+                  summary["Tổng"].addToCart += addToCart;
                 });
 
                 renderSummary(summary, categoryProducts);
@@ -1136,11 +1265,29 @@
             return "Không xác định";
           }
 
+          // --- COLUMN VISIBILITY STATE ---
+          function getVisibleCols() {
+            const cols = {};
+            document.querySelectorAll('#columnToggleDropdown input[data-col]').forEach(cb => {
+              cols[cb.dataset.col] = cb.checked;
+            });
+            return cols;
+          }
+
+          // Store last render data for re-render on toggle
+          let lastSummary = null;
+          let lastCategoryProducts = null;
+
           function renderSummary(summary, categoryProducts) {
+            lastSummary = summary;
+            lastCategoryProducts = categoryProducts;
+
+            const cols = getVisibleCols();
             const tbody = document.querySelector("#summaryTable tbody");
             tbody.innerHTML = "";
 
             const tongDoanhSo = summary["Tổng"].revenue;
+            const tongViews = summary["Tổng"].views;
 
             const activeCategories = Object.keys(summary).filter(
               (k) => k !== "Tổng" && summary[k].revenue > 0
@@ -1151,20 +1298,34 @@
 
             // Header
             const thead = document.querySelector("#summaryTable thead");
-            thead.innerHTML = `<tr><th></th><th>Doanh số</th><th>CR</th><th>Tỷ trọng</th></tr>`;
+            let headerHTML = '<tr><th></th>';
+            if (cols.revenue) headerHTML += '<th>Doanh số</th>';
+            if (cols.cr) headerHTML += '<th>CR</th>';
+            if (cols.tytrong) headerHTML += '<th>Tỷ trọng</th>';
+            if (cols.traffic) headerHTML += '<th>Traffic</th>';
+            if (cols.ctr) headerHTML += '<th>CTR</th>';
+            if (cols.addtocart) headerHTML += '<th>Thêm vào giỏ</th>';
+            headerHTML += '</tr>';
+            thead.innerHTML = headerHTML;
 
             // Total row
             const tongCR = summary["Tổng"].crCount > 0
               ? (summary["Tổng"].cr / summary["Tổng"].crCount).toFixed(2)
               : "0.00";
+            const tongCTR = summary["Tổng"].ctrCount > 0
+              ? (summary["Tổng"].ctr / summary["Tổng"].ctrCount).toFixed(2)
+              : "0.00";
+            const tongAddToCart = summary["Tổng"].addToCart || 0;
             const trTotal = document.createElement("tr");
             trTotal.className = "grand-total";
-            trTotal.innerHTML = `
-              <td>Doanh số</td>
-              <td class="metric-money">${formatMoney(tongDoanhSo)}</td>
-              <td>${tongCR}%</td>
-              <td></td>
-            `;
+            let totalHTML = '<td>Tổng</td>';
+            if (cols.revenue) totalHTML += `<td class="metric-money">${formatMoney(tongDoanhSo)}</td>`;
+            if (cols.cr) totalHTML += `<td>${tongCR}%</td>`;
+            if (cols.tytrong) totalHTML += '<td></td>';
+            if (cols.traffic) totalHTML += `<td>${formatNumber(tongViews)}</td>`;
+            if (cols.ctr) totalHTML += `<td>${tongCTR}%</td>`;
+            if (cols.addtocart) totalHTML += `<td>${formatNumber(tongAddToCart)}</td>`;
+            trTotal.innerHTML = totalHTML;
             tbody.appendChild(trTotal);
 
             // Category rows
@@ -1176,14 +1337,19 @@
               const avgCR = data.crCount > 0
                 ? (data.cr / data.crCount).toFixed(2)
                 : "0.00";
+              const avgCTR = data.ctrCount > 0
+                ? (data.ctr / data.ctrCount).toFixed(2)
+                : "0.00";
               const tr = document.createElement("tr");
               tr.style.cursor = "pointer";
-              tr.innerHTML = `
-                <td><strong>${danhMuc}</strong> <i class="fa-solid fa-chevron-right" style="font-size:0.7em;color:var(--secondary);margin-left:4px;"></i></td>
-                <td class="metric-money">${formatMoney(data.revenue)}</td>
-                <td>${avgCR}%</td>
-                <td>${tyTrong}%</td>
-              `;
+              let rowHTML = `<td><strong>${danhMuc}</strong> <i class="fa-solid fa-chevron-right" style="font-size:0.7em;color:var(--secondary);margin-left:4px;"></i></td>`;
+              if (cols.revenue) rowHTML += `<td class="metric-money">${formatMoney(data.revenue)}</td>`;
+              if (cols.cr) rowHTML += `<td>${avgCR}%</td>`;
+              if (cols.tytrong) rowHTML += `<td>${tyTrong}%</td>`;
+              if (cols.traffic) rowHTML += `<td>${formatNumber(data.views)}</td>`;
+              if (cols.ctr) rowHTML += `<td>${avgCTR}%</td>`;
+              if (cols.addtocart) rowHTML += `<td>${formatNumber(data.addToCart)}</td>`;
+              tr.innerHTML = rowHTML;
               tr.addEventListener("click", () => {
                 showCategoryDetail(danhMuc, categoryProducts[danhMuc] || []);
               });
@@ -1192,29 +1358,47 @@
           }
 
           function showCategoryDetail(danhMuc, products) {
+            const cols = getVisibleCols();
             const modal = document.getElementById("detailModal");
             const title = document.getElementById("detailModalTitle");
             const tbody = document.querySelector("#detailTable tbody");
             const thead = document.querySelector("#detailTable thead");
 
             title.innerHTML = `<i class="fa-solid fa-tag"></i> ${danhMuc}`;
-            thead.innerHTML = `<tr><th>Sản phẩm</th><th>Doanh số</th><th>CR</th><th>Tỷ trọng</th></tr>`;
+
+            // Header
+            let headerHTML = '<tr><th>Sản phẩm</th>';
+            if (cols.revenue) headerHTML += '<th>Doanh số</th>';
+            if (cols.cr) headerHTML += '<th>CR</th>';
+            if (cols.tytrong) headerHTML += '<th>Tỷ trọng</th>';
+            if (cols.traffic) headerHTML += '<th>Traffic</th>';
+            if (cols.ctr) headerHTML += '<th>CTR</th>';
+            if (cols.addtocart) headerHTML += '<th>Thêm vào giỏ</th>';
+            headerHTML += '</tr>';
+            thead.innerHTML = headerHTML;
             tbody.innerHTML = "";
 
             const totalRev = products.reduce((s, p) => s + p.revenue, 0);
+            const totalViews = products.reduce((s, p) => s + (p.views || 0), 0);
+            const totalAddToCart = products.reduce((s, p) => s + (p.addToCart || 0), 0);
             const avgCR = products.length > 0
               ? (products.reduce((s, p) => s + p.cr, 0) / products.length).toFixed(2)
+              : "0.00";
+            const avgCTR = products.length > 0
+              ? (products.reduce((s, p) => s + (p.ctr || 0), 0) / products.length).toFixed(2)
               : "0.00";
 
             // Total row
             const trTotal = document.createElement("tr");
             trTotal.className = "grand-total";
-            trTotal.innerHTML = `
-              <td>Doanh số</td>
-              <td class="metric-money">${formatMoney(totalRev)}</td>
-              <td>${avgCR}%</td>
-              <td></td>
-            `;
+            let totalHTML = '<td>Tổng</td>';
+            if (cols.revenue) totalHTML += `<td class="metric-money">${formatMoney(totalRev)}</td>`;
+            if (cols.cr) totalHTML += `<td>${avgCR}%</td>`;
+            if (cols.tytrong) totalHTML += '<td></td>';
+            if (cols.traffic) totalHTML += `<td>${formatNumber(totalViews)}</td>`;
+            if (cols.ctr) totalHTML += `<td>${avgCTR}%</td>`;
+            if (cols.addtocart) totalHTML += `<td>${formatNumber(totalAddToCart)}</td>`;
+            trTotal.innerHTML = totalHTML;
             tbody.appendChild(trTotal);
 
             // Sort by revenue desc
@@ -1225,13 +1409,16 @@
                 ? ((item.revenue / totalRev) * 100).toFixed(2)
                 : "0.00";
               const itemCR = (item.cr || 0).toFixed(2);
+              const itemCTR = (item.ctr || 0).toFixed(2);
               const tr = document.createElement("tr");
-              tr.innerHTML = `
-                <td>${item.name || "(Không có tên)"}</td>
-                <td class="metric-money">${formatMoney(item.revenue)}</td>
-                <td>${itemCR}%</td>
-                <td>${tyTrong}%</td>
-              `;
+              let rowHTML = `<td>${item.name || "(Không có tên)"}</td>`;
+              if (cols.revenue) rowHTML += `<td class="metric-money">${formatMoney(item.revenue)}</td>`;
+              if (cols.cr) rowHTML += `<td>${itemCR}%</td>`;
+              if (cols.tytrong) rowHTML += `<td>${tyTrong}%</td>`;
+              if (cols.traffic) rowHTML += `<td>${formatNumber(item.views || 0)}</td>`;
+              if (cols.ctr) rowHTML += `<td>${itemCTR}%</td>`;
+              if (cols.addtocart) rowHTML += `<td>${formatNumber(item.addToCart || 0)}</td>`;
+              tr.innerHTML = rowHTML;
               tbody.appendChild(tr);
             });
 
